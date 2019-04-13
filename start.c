@@ -27,11 +27,27 @@
 
 enum {
 	BASE_POS,
+	L_POS_0,
+	L_POS_1,
+	R_POS_0,
+	R_POS_1
+};
+
+enum {
+	ML_POS,
+	MR_POS,
 };
 
 static Entity *grp_left;
 static Entity *grp_right;
+static Entity *grp_down;
+static Entity *grp_atk;
+
 static int jmp_power = -1;
+static int player_pos;
+
+static int atk_state;
+static int atk_dir;
 
 static void print_mob(Entity *mob)
 {
@@ -44,7 +60,7 @@ static void draw_level(Entity *ai, Entity *level)
 {
 	Entity *txt = yeGet(ai, "text");
 	Entity *pjp = yeGet(ai, "pjp");
-	Entity *pj = yeGet(ai, "pj");
+	Entity *pj = yeGet(yeGet(ai, "pj"), player_pos);
 	Entity *monsters = yeGet(ai, "monsters");
 
 	for (int i = 0; i < yeLen(level); ++i) {
@@ -65,8 +81,9 @@ static void draw_level(Entity *ai, Entity *level)
 	Entity *msp = yeGet(ai, "msp");
 	for (int j = 0; j < yeLen(msp); ++j) {
 		int mt = yeGetIntAt(yeGet(msp, j), 0);
+		int mn_sp =  yeGetIntAt(yeGet(msp, j), 2);
  		Entity *mpos = yeGet(yeGet(msp, j), 1);
-		Entity *mon = yeGet(monsters, mt);
+		Entity *mon = yeGet(yeGet(monsters, mt), mn_sp);
 
 		px = ywPosX(mpos);
 		py = ywPosY(mpos);
@@ -87,7 +104,7 @@ void *ai_action(int nbArgs, void **args)
 	Entity *eves = args[1];
 	Entity *pjp = yeGet(ai, "pjp");
 	Entity *lv = yeGet(ai, "lv");
-	int on_land = 0;
+	int on_land = 0, press_jmp = yevIsKeyUp(eves, ' ');
 	int py;
 	static int x_mv;
 
@@ -104,6 +121,11 @@ void *ai_action(int nbArgs, void **args)
 		printf("left\n");
 	}
 
+	if (yevIsGrpDown(eves, grp_atk) && !atk_state) {
+		atk_state = 1;
+		printf("ATTACK !!!\n");
+	}
+
 	if (jmp_power < 0) {
 		int px = ywPosX(pjp);
 		py = ywPosY(pjp);
@@ -118,6 +140,17 @@ void *ai_action(int nbArgs, void **args)
 			}
 		}
 	}
+
+	if (yevIsGrpDown(eves, grp_down)) {
+		if (!x_mv)
+			player_pos = BASE_POS;
+	}
+
+	if (x_mv > 0)
+		player_pos = player_pos ==  R_POS_0 ? R_POS_1 : R_POS_0;
+	else if (x_mv < 0)
+		player_pos = player_pos ==  L_POS_0 ? L_POS_1 : L_POS_0;
+
 	ywPosAddXY(pjp, x_mv, -jmp_power);
 	ywPosPrint(pjp);
 	if (ywPosX(pjp) < 1) {
@@ -130,12 +163,13 @@ void *ai_action(int nbArgs, void **args)
 		ywPosSetY(pjp, 29);
 		on_land = 1;
 	} else if (jmp_power > 0 && ywPosY(pjp) <= 3) {
+		jmp_power = 0;
 		ywPosSetY(pjp, 2);
 	}
 	jmp_power -= 1;
 	ywPosPrint(pjp);
 
-	if (yevIsKeyUp(eves, ' ') && on_land) {
+	if (press_jmp && on_land) {
 		x_mv *= 2;
 		jmp_power = 3;
 	}
@@ -166,17 +200,47 @@ void *ai_init(int nbArgs, void **args)
 	printf("ai, yume no ai !\n");
 	YEntityBlock {
 		ai.pj = [
-			" O ",
-			"/Y\\",
-			"/ \\"
+			[
+				" o ",
+				"/Y\\",
+				"/ \\"
+				],
+			[
+				" o ",
+				"/( ",
+				"/|  "
+				],
+			[
+				" o ",
+				"/( ",
+				" ] "
+				],
+			[
+				" o ",
+				" )\\",
+				" |\\"
+				],
+			[
+				" o ",
+				" )\\",
+				" ] "
+				]
+
 			];
 		ai.monsters = [
 			[
-				"<==<o>",
-				"/  \\"
+				[
+					"<==<o>",
+					"/  \\  "
+					],
+				[
+					"<o>==>",
+					"  /  \\"
+					]
+
 				],
 			[
-				"\\^/"
+				[ "\\^/" ], [ "\\^/" ]
 				]
 			];
 		ai.text = {
@@ -198,9 +262,9 @@ void *ai_init(int nbArgs, void **args)
 		ai["turn-length"] = 130000;
 	}
 
-	pj = yeGet(ai, "pj");
-	print_mob(yeGetByStr(ai, "monsters.0"));
-	print_mob(yeGetByStr(ai, "monsters.1"));
+	pj = yeGet(yeGet(ai, "pj"), player_pos);
+	print_mob(yeGetByStr(ai, "monsters.0.0"));
+	print_mob(yeGetByStr(ai, "monsters.0.1"));
 	print_mob(yeGet(levels, 0));
 	print_mob(pj);
 	monsters = yeGet(ai, "monsters");
@@ -214,12 +278,11 @@ void *ai_init(int nbArgs, void **args)
 			YEntityBlock { ai.pjp = [px, i]; };
 		}
 		for (int j = 0; j < NB_MONSTERS; ++j) {
-			Entity *mon = yeGet(monsters, j);
 			px = yeStrChrIdx(ll, '0' + j);
 			if (px > 0) {
 				Entity *mp = yeCreateArray(msp, NULL);
 				yeStringReplaceCharAt(ll, ' ', px);
-				YEntityBlock { mp = [j, [px, i]]; };
+				YEntityBlock { mp = [j, [px, i], MR_POS]; };
 			}
 		}
 	}
@@ -249,5 +312,7 @@ void *mod_init(int nbArg, void **args)
 		yeGet(yeGet(mod, "test_ai"), "<type>"));
 	grp_left = yevCreateGrp(NULL, 'a', Y_LEFT_KEY);
 	grp_right = yevCreateGrp(NULL, 'd', Y_RIGHT_KEY);
+	grp_down = yevCreateGrp(NULL, 's', Y_DOWN_KEY);
+	grp_atk = yevCreateGrp(NULL, 'z', '\n', 'w');
 	return mod;
 }
