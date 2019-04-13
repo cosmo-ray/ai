@@ -20,9 +20,14 @@
  */
 
 #include <yirl/entity.h>
+#include <yirl/events.h>
 #include <yirl/game.h>
 
 #define NB_MONSTERS 2
+
+static Entity *grp_left;
+static Entity *grp_right;
+static int jmp_power = -1;
 
 static void print_mob(Entity *mob)
 {
@@ -40,8 +45,8 @@ static void draw_level(Entity *ai, Entity *level)
 
 	for (int i = 0; i < yeLen(level); ++i) {
 		Entity *ll = yeGet(level, i);
-		yePushAt(txt, ll, i + 2);
-
+		yeSetStringAt(txt, i + 2, yeGetString(ll));
+		/* yePushAt(txt, ll, i + 2); */
 	}
 
 	int px = ywPosX(pjp);
@@ -73,9 +78,64 @@ static void draw_level(Entity *ai, Entity *level)
 void *ai_action(int nbArgs, void **args)
 {
 	Entity *ai = args[0];
+	Entity *eves = args[1];
+	Entity *pjp = yeGet(ai, "pjp");
+	Entity *lv = yeGet(ai, "lv");
+	int on_land = 0;
+	int py;
+	static int x_mv;
+
+	if (yevIsGrpUp(eves, grp_right) ||
+	    yevIsGrpUp(eves, grp_left)) {
+		x_mv = 0;
+	}
+
+	if (yevIsGrpDown(eves, grp_right)) {
+		x_mv = 1;
+		printf("right\n");
+	} else if (yevIsGrpDown(eves, grp_left)) {
+		x_mv = -1;
+		printf("left\n");
+	}
+
+	if (jmp_power < 0) {
+		int px = ywPosX(pjp);
+		py = ywPosY(pjp);
+
+		if (jmp_power < -5)
+			jmp_power = -5;
+		for (int i = -1; i >= jmp_power; --i) {
+			Entity *ll = yeGet(lv, py - i);
+			if (yeStrDoesRangeContainChr(ll, px, px + 3, '=')) {
+				jmp_power = i + 1;
+				on_land = 1;
+			}
+		}
+	}
+	ywPosAddXY(pjp, x_mv, -jmp_power);
+	ywPosPrint(pjp);
+	if (ywPosX(pjp) < 1) {
+		ywPosSetX(pjp, 1);
+	} else if (ywPosX(pjp) > 65 - 3) {
+		ywPosSetX(pjp, 65 - 3);
+	}
+
+	if (ywPosY(pjp) > 29) {
+		ywPosSetY(pjp, 29);
+		on_land = 1;
+	} else if (jmp_power > 0 && ywPosY(pjp) <= 3) {
+		ywPosSetY(pjp, 2);
+	}
+	jmp_power -= 1;
+	ywPosPrint(pjp);
+
+	if (yevIsKeyUp(eves, ' ') && on_land) {
+		x_mv *= 2;
+		jmp_power = 3;
+	}
 
 	printf("action !\n");
-	draw_level(ai, yeGet(ai, "level"));
+	draw_level(ai, lv);
 	return (void *)ACTION;
 }
 
@@ -114,8 +174,9 @@ void *ai_init(int nbArgs, void **args)
 				]
 			];
 		ai.text = {
-		0:       "life: {ai.life}",
+		0:       "life: <3 <3 <3",
 		1:       "|----------------------------------------------------------------|",
+		2-32:    "",
 		33 :     "|________________________________________________________________|"
 		};
 		ai.lv = level;
@@ -127,7 +188,8 @@ void *ai_init(int nbArgs, void **args)
 		// monsters pos
 		ai.msp = [];
 		ai["text-align"] = "center";
-		ai["turn-length"] = 200000;
+		/* ai["turn-length"] = 300000; */
+		ai["turn-length"] = 130000;
 	}
 
 	pj = yeGet(ai, "pj");
@@ -170,16 +232,19 @@ void *mod_init(int nbArg, void **args)
 
 	printf("AI init !");
 	init = yeCreateArray(NULL, NULL);
-	yeCreateString("ascii-trail", init, "name");
-	yeCreateFunction("ai_init", ygGetManager("tcc"), init, "callback");
-	ywidAddSubType(init);
 	YEntityBlock {
+		init.name = "ai";
+		init.callback = ai_init;
+		mod.name = "ai";
 		mod.starting_widget = "test_ai";
 		mod.test_ai = [];
 		mod["window size"] = [800, 600];
-		mod.test_ai["<type>"] = "ascii-trail";
+		mod.test_ai["<type>"] = "ai";
 	}
+	ywidAddSubType(init);
 	printf("%p - %p - %p\n", mod, yeGet(mod, "test_ai"),
 		yeGet(yeGet(mod, "test_ai"), "<type>"));
+	grp_left = yevCreateGrp(NULL, 'a', Y_LEFT_KEY);
+	grp_right = yevCreateGrp(NULL, 'd', Y_RIGHT_KEY);
 	return mod;
 }
