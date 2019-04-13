@@ -25,6 +25,10 @@
 
 #define NB_MONSTERS 2
 
+enum {
+	BASE_POS,
+};
+
 static Entity *grp_left;
 static Entity *grp_right;
 static int jmp_power = -1;
@@ -57,9 +61,11 @@ static void draw_level(Entity *ai, Entity *level)
 				     yeGetStringAt(pj, i),
 				     px);
 	}
-	for (int j = 0; j < NB_MONSTERS; ++j) {
-		int mt = yeGetIntAt(yeGet(yeGet(ai, "msp"), j), 0);
- 		Entity *mpos = yeGet(yeGet(yeGet(ai, "msp"), j), 1);
+
+	Entity *msp = yeGet(ai, "msp");
+	for (int j = 0; j < yeLen(msp); ++j) {
+		int mt = yeGetIntAt(yeGet(msp, j), 0);
+ 		Entity *mpos = yeGet(yeGet(msp, j), 1);
 		Entity *mon = yeGet(monsters, mt);
 
 		px = ywPosX(mpos);
@@ -203,8 +209,8 @@ void *ai_init(int nbArgs, void **args)
 	for (int i = 0; i < yeLen(level); ++i) {
 		Entity *ll = yeGet(level, i);
 		int px = yeStrChrIdx(ll, '*');
-		printf("chr: %d\n", px);
 		if (px > 0) {
+			yeStringReplaceCharAt(ll, ' ', px);
 			YEntityBlock { ai.pjp = [px, i]; };
 		}
 		for (int j = 0; j < NB_MONSTERS; ++j) {
@@ -212,15 +218,12 @@ void *ai_init(int nbArgs, void **args)
 			px = yeStrChrIdx(ll, '0' + j);
 			if (px > 0) {
 				Entity *mp = yeCreateArray(msp, NULL);
+				yeStringReplaceCharAt(ll, ' ', px);
 				YEntityBlock { mp = [j, [px, i]]; };
 			}
 		}
 	}
 	draw_level(ai, level);
-	ywPosPrint(yeGet(ai, "pjp"));
-	ywPosPrint(yeGet(yeGet(yeGet(ai, "msp"), 0), 1));
-	ywPosPrint(yeGet(yeGet(yeGet(ai, "msp"), 1), 1));
-	printf("%p\n", yeGet(yeGet(ai, "text"), 0));
 	void *ret = ywidNewWidget(ai, "text-screen");
 	return ret;
 }
