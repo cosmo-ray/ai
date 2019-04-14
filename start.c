@@ -27,6 +27,7 @@
 
 enum {
 	BASE_POS,
+	DONT_KNOW_POS,
 	L_POS_0,
 	L_POS_1,
 	R_POS_0,
@@ -49,10 +50,54 @@ static int player_pos;
 static int atk_state;
 static int atk_dir;
 
+static void *die(Entity *ai)
+{
+	printf("YOU ARE DEAD !\n");
+	ygTerminate();
+}
+
 static void print_mob(Entity *mob)
 {
 	YE_FOREACH(mob, str) {
 		printf("%s\n", yeGetString(str));
+	}
+}
+
+static Entity *check_monster_col(Entity *msp, Entity *pos, int w, int h)
+{
+	yeAutoFree Entity *ps = ywSizeCreate(w, h, NULL, NULL);
+	yeAutoFree Entity *pr = ywRectCreatePosSize(pos, ps, NULL, NULL);
+
+	for (int j = 0; j < yeLen(msp); ++j) {
+		Entity *minfo = yeGet(msp, j);
+		int mt = yeGetIntAt(minfo, 0);
+ 		Entity *mpos = yeGet(minfo, 1);
+		yeAutoFree Entity *ms;
+		yeAutoFree Entity *mr;
+
+		if (mt == 0)
+			ms = ywSizeCreate(6, 2, NULL, NULL);
+		else
+			ms = ywSizeCreate(3, 1, NULL, NULL);
+		mr = ywRectCreatePosSize(mpos, ms, NULL, NULL);
+		if (ywRectCollision(pr, mr))
+			return minfo;
+	}
+	return NULL;
+}
+
+static void draw_stuff(Entity *txt, Entity *stuff, Entity *stuff_p)
+{
+	int x = ywPosX(stuff_p);
+	int y = ywPosY(stuff_p);
+	int l = yeLen(stuff);
+	for (int i = 0; i < l; ++i) {
+		/* 3 because 2 case of txt threshold */
+		/* (the life string and the |--| on top) */
+		/* + 1 because voila */
+		yeStringReplaceStrAt(yeGet(txt, y - l + i + 3),
+				     yeGetStringAt(stuff, i),
+				     x);
 	}
 }
 
@@ -66,35 +111,72 @@ static void draw_level(Entity *ai, Entity *level)
 	for (int i = 0; i < yeLen(level); ++i) {
 		Entity *ll = yeGet(level, i);
 		yeSetStringAt(txt, i + 2, yeGetString(ll));
-		/* yePushAt(txt, ll, i + 2); */
 	}
 
-	int px = ywPosX(pjp);
-	int py = ywPosY(pjp);
-	int pjl = yeLen(pj);
-	for (int i = 0; i < pjl; ++i) {
-		yeStringReplaceStrAt(yeGet(txt, py - pjl + i + 3),
-				     yeGetStringAt(pj, i),
-				     px);
+	draw_stuff(txt, pj, pjp);
+
+	if (atk_state) {
+		YE_NEW(Array, atk_sprite);
+		Entity *pos = yeGet(ai, "atk_p");
+
+		if (atk_dir == L_POS_0) {
+			YEntityBlock {
+				if (atk_state == 1) {
+					atk_sprite = [
+						"\\  ",
+						" \\-",
+						"   ",
+						];
+				} else if (atk_state == 2) {
+					atk_sprite = [
+						"   ",
+						"---",
+						"   ",
+						];
+				} else {
+					atk_sprite = [
+						"   ",
+						" / ",
+						"/  ",
+						];
+				}
+			}
+			draw_stuff(txt, atk_sprite, pos);
+		} else if (atk_dir == R_POS_0) {
+			YEntityBlock {
+				if (atk_state == 1) {
+					atk_sprite = [
+						"  /",
+						"-/ ",
+						"   "
+						];
+				} else if (atk_state == 2) {
+					atk_sprite = [
+						"   ",
+						"---",
+						"   "
+						];
+				} else {
+					atk_sprite = [
+						"   ",
+						"-\\ ",
+						"  \\"
+						];
+				}
+			}
+			draw_stuff(txt, atk_sprite, pos);
+		}
 	}
+
 
 	Entity *msp = yeGet(ai, "msp");
 	for (int j = 0; j < yeLen(msp); ++j) {
 		int mt = yeGetIntAt(yeGet(msp, j), 0);
-		int mn_sp =  yeGetIntAt(yeGet(msp, j), 2);
  		Entity *mpos = yeGet(yeGet(msp, j), 1);
+		int mn_sp =  yeGetIntAt(yeGet(msp, j), 2);
 		Entity *mon = yeGet(yeGet(monsters, mt), mn_sp);
 
-		px = ywPosX(mpos);
-		py = ywPosY(mpos);
-		if (px > 0) {
-			int mjl = yeLen(mon);
-			for (int k = 0; k < mjl; ++k) {
-				yeStringReplaceStrAt(yeGet(txt, py - mjl + k + 3),
-						     yeGetStringAt(mon, k),
-						     px);
-			}
-		}
+		draw_stuff(txt, mon, mpos);
 	}
 }
 
@@ -105,25 +187,47 @@ void *ai_action(int nbArgs, void **args)
 	Entity *pjp = yeGet(ai, "pjp");
 	Entity *lv = yeGet(ai, "lv");
 	int on_land = 0, press_jmp = yevIsKeyUp(eves, ' ');
+	int l_down = yevIsGrpDown(eves, grp_left);
+	int r_down = yevIsGrpDown(eves, grp_right);
+	Entity *msp = yeGet(ai, "msp");
+	Entity *l_txt = yeGet(yeGet(ai, "text"), 0);
+	Entity *life = yeGetIntAt(ai, "life");
+	Entity *atk_pos = yeGet(ai, "atk_p");
 	int py;
 	static int x_mv;
 
-	if (yevIsGrpUp(eves, grp_right) ||
-	    yevIsGrpUp(eves, grp_left)) {
-		x_mv = 0;
-	}
-
-	if (yevIsGrpDown(eves, grp_right)) {
+	if (r_down) {
 		x_mv = 1;
 		printf("right\n");
-	} else if (yevIsGrpDown(eves, grp_left)) {
+	} else if (l_down) {
 		x_mv = -1;
 		printf("left\n");
 	}
 
+	yeSetString(l_txt, "life:");
+	for (int i = 0; i < life; ++i)
+		yeStringAdd(l_txt, " <3");
+
+	if ((yevIsGrpUp(eves, grp_right) && !l_down) ||
+	    (yevIsGrpUp(eves, grp_left) && !r_down)) {
+		x_mv = 0;
+	}
+
+	if (atk_state) {
+		// '& 3' is '% 4' the hipster way
+		atk_state = (atk_state + 1) & 3;
+	}
+
 	if (yevIsGrpDown(eves, grp_atk) && !atk_state) {
 		atk_state = 1;
-		printf("ATTACK !!!\n");
+		if (player_pos >= L_POS_0 && player_pos <= L_POS_1) {
+			atk_dir = L_POS_0;
+		} else if (player_pos >= R_POS_0 && player_pos <= R_POS_1) {
+			atk_dir = R_POS_0;
+		} else {
+			atk_dir = 0;
+			player_pos = DONT_KNOW_POS;
+		}
 	}
 
 	if (jmp_power < 0) {
@@ -175,6 +279,29 @@ void *ai_action(int nbArgs, void **args)
 	}
 
 	printf("action !\n");
+	Entity *minfo;
+	if ((minfo = check_monster_col(msp, pjp, 3, 3))) {
+		Entity *l = yeGet(ai, "life");
+		Entity *mpos = yeGet(minfo, 1);
+
+		yeSubInt(l, 1);
+		printf("bad time is gonna happen:( %p %p\n", mpos,
+		       pjp);
+		if (ywPosX(mpos) > ywPosX(pjp))
+			ywPosAddXY(pjp, -3, 0);
+		else
+			ywPosAddXY(pjp, 3, 0);
+		if (yeGetInt(l) < 1)
+			return die(ai);
+	}
+	if (atk_state) {
+		ywPosSet(atk_pos, pjp, 0);
+		if (atk_dir == L_POS_0) {
+			ywPosSubXY(atk_pos, 3, 0);
+		} else if (atk_dir == R_POS_0) {
+			ywPosAddXY(atk_pos, 3, 0);
+		}
+	}
 	draw_level(ai, lv);
 	return (void *)ACTION;
 }
@@ -206,6 +333,11 @@ void *ai_init(int nbArgs, void **args)
 				"/ \\"
 				],
 			[
+				"<o>",
+				" Y ",
+				"/ \\"
+				],
+			[
 				" o ",
 				"/( ",
 				"/|  "
@@ -223,7 +355,7 @@ void *ai_init(int nbArgs, void **args)
 			[
 				" o ",
 				" )\\",
-				" ] "
+				" [ "
 				]
 
 			];
@@ -244,7 +376,7 @@ void *ai_init(int nbArgs, void **args)
 				]
 			];
 		ai.text = {
-		0:       "life: <3 <3 <3",
+		0:       "",
 		1:       "|----------------------------------------------------------------|",
 		2-32:    "",
 		33 :     "|________________________________________________________________|"
@@ -256,6 +388,7 @@ void *ai_init(int nbArgs, void **args)
 		ai.fmt = "yirl";
 		ai.action = ai_action;
 		// monsters pos
+		ai.atk_p = [0, 0];
 		ai.msp = [];
 		ai["text-align"] = "center";
 		/* ai["turn-length"] = 300000; */
