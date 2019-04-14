@@ -25,6 +25,8 @@
 
 #define NB_MONSTERS 2
 
+#define ATK_BAR_MAX 10
+
 enum {
 	BASE_POS,
 	DONT_KNOW_POS,
@@ -43,6 +45,8 @@ static Entity *grp_left;
 static Entity *grp_right;
 static Entity *grp_down;
 static Entity *grp_atk;
+
+static int atk_bar;
 
 static int jmp_power = -1;
 static int player_pos;
@@ -205,10 +209,6 @@ void *ai_action(int nbArgs, void **args)
 		printf("left\n");
 	}
 
-	yeSetString(l_txt, "life:");
-	for (int i = 0; i < life; ++i)
-		yeStringAdd(l_txt, " <3");
-
 	if ((yevIsGrpUp(eves, grp_right) && !l_down) ||
 	    (yevIsGrpUp(eves, grp_left) && !r_down)) {
 		x_mv = 0;
@@ -219,7 +219,8 @@ void *ai_action(int nbArgs, void **args)
 		atk_state = (atk_state + 1) & 3;
 	}
 
-	if (yevIsGrpDown(eves, grp_atk) && !atk_state) {
+	if (yevIsGrpDown(eves, grp_atk) && atk_bar == ATK_BAR_MAX) {
+		atk_bar = 0;
 		atk_state = 1;
 		if (player_pos >= L_POS_0 && player_pos <= L_POS_1) {
 			atk_dir = L_POS_0;
@@ -229,6 +230,8 @@ void *ai_action(int nbArgs, void **args)
 			atk_dir = 0;
 			player_pos = DONT_KNOW_POS;
 		}
+	} else if (atk_bar < ATK_BAR_MAX) {
+		++atk_bar;
 	}
 
 	if (jmp_power < 0) {
@@ -303,10 +306,23 @@ void *ai_action(int nbArgs, void **args)
 		}
 		if ((minfo = check_monster_col(msp, atk_pos, 3, 3))) {
 			printf("TOUCH TOUCH kokoni TOUCH\n");
-			printf("dakara kara\n");
-			printf("TOUCH !\n");
+			yeRemoveChild(msp, minfo);
 		}
 	}
+
+	yeSetString(l_txt, "life:");
+	for (int i = 0; i < life; ++i)
+		yeStringAdd(l_txt, " <3");
+
+	int i;
+	Entity *b_txt = yeGet(yeGet(ai, "text"), 34);
+	yeSetString(b_txt, "AttackReady: |");
+	for (i = 0; i < atk_bar; ++i)
+		yeStringAddCh(b_txt, '#');
+	for (; i < ATK_BAR_MAX; ++i)
+		yeStringAddCh(b_txt, '-');
+	yeStringAddCh(b_txt, '|');
+
 	draw_level(ai, lv);
 	return (void *)ACTION;
 }
@@ -384,7 +400,8 @@ void *ai_init(int nbArgs, void **args)
 		0:       "",
 		1:       "|----------------------------------------------------------------|",
 		2-32:    "",
-		33 :     "|________________________________________________________________|"
+		33:      "|________________________________________________________________|",
+		34: ""
 		};
 		ai.lv = level;
 		ai.lvs = levels;
@@ -399,7 +416,7 @@ void *ai_init(int nbArgs, void **args)
 		/* ai["turn-length"] = 300000; */
 		ai["turn-length"] = 130000;
 	}
-
+	atk_bar = ATK_BAR_MAX;
 	pj = yeGet(yeGet(ai, "pj"), player_pos);
 	print_mob(yeGetByStr(ai, "monsters.0.0"));
 	print_mob(yeGetByStr(ai, "monsters.0.1"));
