@@ -136,7 +136,7 @@ static void draw_level(Entity *ai, Entity *level)
 				} else {
 					atk_sprite = [
 						"   ",
-						" / ",
+						" /-",
 						"/  ",
 						];
 				}
@@ -193,6 +193,7 @@ void *ai_action(int nbArgs, void **args)
 	Entity *l_txt = yeGet(yeGet(ai, "text"), 0);
 	Entity *life = yeGetIntAt(ai, "life");
 	Entity *atk_pos = yeGet(ai, "atk_p");
+	Entity *minfo;
 	int py;
 	static int x_mv;
 
@@ -279,7 +280,6 @@ void *ai_action(int nbArgs, void **args)
 	}
 
 	printf("action !\n");
-	Entity *minfo;
 	if ((minfo = check_monster_col(msp, pjp, 3, 3))) {
 		Entity *l = yeGet(ai, "life");
 		Entity *mpos = yeGet(minfo, 1);
@@ -300,6 +300,11 @@ void *ai_action(int nbArgs, void **args)
 			ywPosSubXY(atk_pos, 3, 0);
 		} else if (atk_dir == R_POS_0) {
 			ywPosAddXY(atk_pos, 3, 0);
+		}
+		if ((minfo = check_monster_col(msp, atk_pos, 3, 3))) {
+			printf("TOUCH TOUCH kokoni TOUCH\n");
+			printf("dakara kara\n");
+			printf("TOUCH !\n");
 		}
 	}
 	draw_level(ai, lv);
@@ -339,22 +344,22 @@ void *ai_init(int nbArgs, void **args)
 				],
 			[
 				" o ",
-				"/( ",
+				"/| ",
 				"/|  "
 				],
 			[
 				" o ",
-				"/( ",
+				"/| ",
 				" ] "
 				],
 			[
 				" o ",
-				" )\\",
+				" |\\",
 				" |\\"
 				],
 			[
 				" o ",
-				" )\\",
+				" |\\",
 				" [ "
 				]
 
