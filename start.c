@@ -13,12 +13,6 @@
  *  0. You just DO WHAT THE FUCK YOU WANT TO.
  */
 
-/*
- * I don't think prefix all function by ai was usefull, but 'ai'
- * mean love in japaness, and I find that cute
- * plus I have "ai senshi" singing in my head right now
- */
-
 #include <yirl/entity.h>
 #include <yirl/events.h>
 #include <yirl/game.h>
