@@ -177,6 +177,15 @@ static void draw_level(Entity *ai, Entity *level)
 
 		draw_stuff(txt, mon, mpos);
 	}
+	YE_NEW(Array, exit);
+
+	YEntityBlock {
+		exit = [ " -- ",
+			 "|\\/|",
+			 "|/\\|"
+			];
+	}
+	draw_stuff(txt, exit, yeGet(ai, "exitp"));
 }
 
 void *ai_action(int nbArgs, void **args)
@@ -426,6 +435,12 @@ void *ai_init(int nbArgs, void **args)
 		if (px > 0) {
 			yeStringReplaceCharAt(ll, ' ', px);
 			YEntityBlock { ai.pjp = [px, i]; };
+		}
+
+		px = yeStrChrIdx(ll, '>');
+		if (px > 0) {
+			yeStringReplaceCharAt(ll, ' ', px);
+			YEntityBlock { ai.exitp = [px, i]; };
 		}
 		for (int j = 0; j < NB_MONSTERS; ++j) {
 			px = yeStrChrIdx(ll, '0' + j);
