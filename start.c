@@ -74,10 +74,11 @@ static Entity *check_monster_col(Entity *msp, Entity *pos, int w, int h)
 		yeAutoFree Entity *mr;
 
 		if (mt == 0)
-			ms = ywSizeCreate(6, 2, NULL, NULL);
+			ms = ywSizeCreate(4, 2, NULL, NULL);
 		else
-			ms = ywSizeCreate(3, 1, NULL, NULL);
+			ms = ywSizeCreate(1, 1, NULL, NULL);
 		mr = ywRectCreatePosSize(mpos, ms, NULL, NULL);
+		ywPosAddXY(mr, 1, 0);
 		if (ywRectCollision(pr, mr))
 			return minfo;
 	}
