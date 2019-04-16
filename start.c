@@ -15,6 +15,7 @@
 
 #include <yirl/entity.h>
 #include <yirl/events.h>
+#include <yirl/entity-script.h>
 #include <yirl/game.h>
 
 #define NB_MONSTERS 2
@@ -287,6 +288,12 @@ void *ai_action(int nbArgs, void **args)
 	}
 
 	printf("action !\n");
+	Entity *mcalls = yeGet(ai, "ms_callback");
+	YE_FOREACH(msp, ms_i) {
+		int mt = yeGetIntAt(ms_i, 0);
+
+		yesCall(yeGet(mcalls, mt), ai, ms_i);
+	}
 	if ((minfo = check_monster_col(msp, pjp, 3, 3))) {
 		Entity *l = yeGet(ai, "life");
 		Entity *mpos = yeGet(minfo, 1);
@@ -400,6 +407,7 @@ void *ai_init(int nbArgs, void **args)
 				[ "\\^/" ], [ "\\^/" ]
 				]
 			];
+		ai.ms_callback = [];
 		ai.text = {
 		0:       "",
 		1:       "|----------------------------------------------------------------|",
@@ -420,6 +428,12 @@ void *ai_init(int nbArgs, void **args)
 		/* ai["turn-length"] = 300000; */
 		ai["turn-length"] = 130000;
 	}
+	/* I can't use the YEntityBlock here because I need lua callback,
+	 * and I don;t have the systax yet to add non tcc functions */
+	yeCreateFunctionSimple("ai_bad_mob0_callback", ygGetLuaManager(),
+			       yeGet(ai, "ms_callback"));
+	yeCreateFunctionSimple("ai_bat_callback", ygGetLuaManager(),
+			       yeGet(ai, "ms_callback"));
 	atk_bar = ATK_BAR_MAX;
 	pj = yeGet(yeGet(ai, "pj"), player_pos);
 	print_mob(yeGetByStr(ai, "monsters.0.0"));
@@ -471,6 +485,11 @@ void *mod_init(int nbArg, void **args)
 		mod.test_ai = [];
 		mod["window size"] = [800, 600];
 		mod.test_ai["<type>"] = "ai";
+		mod["window name"] = "Asc II";
+		mod["pre-load"] = [];
+		mod["pre-load"][0] = [];
+		mod["pre-load"][0].file = "callback.lua";
+		mod["pre-load"][0].type = "lua";
 	}
 	ywidAddSubType(init);
 	printf("%p - %p - %p\n", mod, yeGet(mod, "test_ai"),
