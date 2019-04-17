@@ -36,6 +36,10 @@ enum {
 	MR_POS,
 };
 
+/**
+ * if you wonder what's the reason to use that much global:
+ * layzyness
+ */
 static Entity *grp_left;
 static Entity *grp_right;
 static Entity *grp_down;
@@ -49,10 +53,13 @@ static int player_pos;
 static int atk_state;
 static int atk_dir;
 
+static int cur_level;
+
 static void *die(Entity *ai)
 {
 	printf("YOU ARE DEAD !\n");
 	ygTerminate();
+	return (void *)ACTION;
 }
 
 static void print_mob(Entity *mob)
@@ -192,6 +199,37 @@ static void draw_level(Entity *ai, Entity *level)
 	}
 }
 
+static void ai_load_map(Entity *ai)
+{
+	Entity *msp = yeGet(ai, "msp");
+	Entity *level = yeGet(ai, "lv");
+
+	/* The Great Replacement */
+	for (int i = 0; i < yeLen(level); ++i) {
+		Entity *ll = yeGet(level, i);
+		int px = yeStrChrIdx(ll, '*');
+		if (px > 0) {
+			yeStringReplaceCharAt(ll, ' ', px);
+			YEntityBlock { ai.pjp = [px, i]; };
+		}
+
+		px = yeStrChrIdx(ll, '>');
+		if (px > 0) {
+			yeStringReplaceCharAt(ll, ' ', px);
+			YEntityBlock { ai.exitp = [px, i]; };
+		}
+		for (int j = 0; j < NB_MONSTERS; ++j) {
+			px = yeStrChrIdx(ll, '0' + j);
+			if (px > 0) {
+				Entity *mp = yeCreateArray(msp, NULL);
+				yeStringReplaceCharAt(ll, ' ', px);
+				YEntityBlock { mp = [j, [px, i], MR_POS]; };
+			}
+		}
+	}
+
+}
+
 void *ai_action(int nbArgs, void **args)
 {
 	Entity *ai = args[0];
@@ -318,8 +356,20 @@ void *ai_action(int nbArgs, void **args)
 	ywRectPrint(rect);
 	ywPosPrint(yeGet(ai, "exitp"));
 	if (ywRectContain(rect, ywPosX(exitp) + 1, ywPosY(exitp), 0)) {
+		Entity *lvls = yeGet(ai, "lvs");
+		int nb_lvls = yeLen(lvls);
 		printf("EXIT !!!!!!!\n");
-		printf("EXIT !!!!!!!\n");
+		++cur_level;
+		if (cur_level >= nb_lvls) {
+			printf("WIN !!!!!\n");
+			ygTerminate();
+			return (void *)ACTION;
+		} else {
+			yeReplaceBack(ai, yeGet(lvls, cur_level), "lv");
+			ai_load_map(ai);
+			lv = yeGet(ai, "lv");
+		}
+		printf("to level %d/%d\n", cur_level, nb_lvls);
 		printf("EXIT !!!!!!!\n");
 	}
 	if (atk_state) {
@@ -361,36 +411,6 @@ static Entity *ai_levels(void)
 	return r;
 }
 
-void ai_load_map(Entity *ai, Entity *level)
-{
-	Entity *msp = yeGet(ai, "msp");
-
-	/* The Great Replacement */
-	for (int i = 0; i < yeLen(level); ++i) {
-		Entity *ll = yeGet(level, i);
-		int px = yeStrChrIdx(ll, '*');
-		if (px > 0) {
-			yeStringReplaceCharAt(ll, ' ', px);
-			YEntityBlock { ai.pjp = [px, i]; };
-		}
-
-		px = yeStrChrIdx(ll, '>');
-		if (px > 0) {
-			yeStringReplaceCharAt(ll, ' ', px);
-			YEntityBlock { ai.exitp = [px, i]; };
-		}
-		for (int j = 0; j < NB_MONSTERS; ++j) {
-			px = yeStrChrIdx(ll, '0' + j);
-			if (px > 0) {
-				Entity *mp = yeCreateArray(msp, NULL);
-				yeStringReplaceCharAt(ll, ' ', px);
-				YEntityBlock { mp = [j, [px, i], MR_POS]; };
-			}
-		}
-	}
-
-}
-
 void *ai_init(int nbArgs, void **args)
 {
 	Entity *ai = args[0];
@@ -399,7 +419,7 @@ void *ai_init(int nbArgs, void **args)
 	Entity *pj;
 	Entity *monsters;
 
-	printf("ai, yume no ai !\n");
+	cur_level = 0;
 	YEntityBlock {
 		ai.pj = [
 			[
@@ -472,7 +492,7 @@ void *ai_init(int nbArgs, void **args)
 		ai["turn-length"] = 130000;
 	}
 	/* I can't use the YEntityBlock here because I need lua callback,
-	 * and I don;t have the systax yet to add non tcc functions */
+	 * and I don't have the syntax yet to add non tcc functions */
 	yeCreateFunctionSimple("ai_bad_mob0_callback", ygGetLuaManager(),
 			       yeGet(ai, "ms_callback"));
 	yeCreateFunctionSimple("ai_bat_callback", ygGetLuaManager(),
@@ -484,7 +504,7 @@ void *ai_init(int nbArgs, void **args)
 	print_mob(yeGet(levels, 0));
 	print_mob(pj);
 	monsters = yeGet(ai, "monsters");
-	ai_load_map(ai, level);
+	ai_load_map(ai);
 	draw_level(ai, level);
 	void *ret = ywidNewWidget(ai, "text-screen");
 	return ret;
