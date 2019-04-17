@@ -36,6 +36,12 @@ enum {
 	MR_POS,
 };
 
+enum {
+	RUNNING_STATE,
+	SHOW_WIN_STATE,
+	SHOW_LOSE_STATE
+};
+
 /**
  * if you wonder what's the reason to use that much global:
  * layzyness
@@ -55,10 +61,11 @@ static int atk_dir;
 
 static int cur_level;
 
+static int game_state;
+
 static void *die(Entity *ai)
 {
-	printf("YOU ARE DEAD !\n");
-	ygTerminate();
+	game_state = SHOW_LOSE_STATE;
 	return (void *)ACTION;
 }
 
@@ -197,6 +204,21 @@ static void draw_level(Entity *ai, Entity *level)
 	}
 }
 
+static void *do_show_state(Entity *ai)
+{
+	Entity *txt = yeGet(ai, "text");
+	const char *str = game_state == SHOW_WIN_STATE ? "YOU WIN !!!!" : "YOU LOSE !!\n";
+
+	yeSetStringAt(txt, 0, str);
+	yePopBack(txt);
+	yeSetStringAt(txt, yeLen(txt) - 1, str);
+	if (yeLen(txt) < 3) {
+		ygTerminate();
+	}
+	return (void *)ACTION;
+}
+
+
 static void ai_load_map(Entity *ai)
 {
 	Entity *msp = yeGet(ai, "msp");
@@ -246,6 +268,8 @@ void *ai_action(int nbArgs, void **args)
 	int py;
 	static int x_mv;
 
+	if (game_state == SHOW_WIN_STATE || game_state == SHOW_LOSE_STATE)
+		return do_show_state(ai);
 	if (r_down) {
 		x_mv = 1;
 	} else if (l_down) {
@@ -350,8 +374,7 @@ void *ai_action(int nbArgs, void **args)
 		int nb_lvls = yeLen(lvls);
 		++cur_level;
 		if (cur_level >= nb_lvls) {
-			printf("WIN !!!!!\n");
-			ygTerminate();
+			game_state = SHOW_WIN_STATE;
 			return (void *)ACTION;
 		} else {
 			yeReplaceBack(ai, yeGet(lvls, cur_level), "lv");
