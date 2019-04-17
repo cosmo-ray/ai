@@ -67,6 +67,8 @@ static Entity *check_monster_col(Entity *msp, Entity *pos, int w, int h)
 	yeAutoFree Entity *ps = ywSizeCreate(w, h, NULL, NULL);
 	yeAutoFree Entity *pr = ywRectCreatePosSize(pos, ps, NULL, NULL);
 
+	// pos of pj designate the bottom left
+	ywPosSubXY(pr, 0, 2);
 	for (int j = 0; j < yeLen(msp); ++j) {
 		Entity *minfo = yeGet(msp, j);
 		int mt = yeGetIntAt(minfo, 0);
@@ -75,11 +77,13 @@ static Entity *check_monster_col(Entity *msp, Entity *pos, int w, int h)
 		yeAutoFree Entity *mr;
 
 		if (mt == 0)
-			ms = ywSizeCreate(4, 2, NULL, NULL);
+			ms = ywSizeCreate(4, 1, NULL, NULL);
 		else
-			ms = ywSizeCreate(1, 1, NULL, NULL);
+			ms = ywSizeCreate(1, 0, NULL, NULL);
 		mr = ywRectCreatePosSize(mpos, ms, NULL, NULL);
-		ywPosAddXY(mr, 1, 0);
+		ywPosAddXY(mr, 1, -ywRectH(ms));
+		ywRectPrint(mr);
+		ywRectPrint(pr);
 		if (ywRectCollision(pr, mr))
 			return minfo;
 	}
@@ -115,6 +119,14 @@ static void draw_level(Entity *ai, Entity *level)
 
 	draw_stuff(txt, pj, pjp);
 
+	YE_NEW(Array, exit);
+	YEntityBlock {
+		exit = [ " -- ",
+			 "|\\/|",
+			 "|/\\|"
+			];
+	}
+	draw_stuff(txt, exit, yeGet(ai, "exitp"));
 	if (atk_state) {
 		YE_NEW(Array, atk_sprite);
 		Entity *pos = yeGet(ai, "atk_p");
@@ -178,15 +190,6 @@ static void draw_level(Entity *ai, Entity *level)
 
 		draw_stuff(txt, mon, mpos);
 	}
-	YE_NEW(Array, exit);
-
-	YEntityBlock {
-		exit = [ " -- ",
-			 "|\\/|",
-			 "|/\\|"
-			];
-	}
-	draw_stuff(txt, exit, yeGet(ai, "exitp"));
 }
 
 void *ai_action(int nbArgs, void **args)
@@ -308,6 +311,17 @@ void *ai_action(int nbArgs, void **args)
 		if (yeGetInt(l) < 1)
 			return die(ai);
 	}
+
+	yeAutoFree Entity *rect = ywRectCreateInts(ywPosX(pjp), ywPosY(pjp) - 2,
+						    3, 3, NULL, NULL);
+	Entity *exitp = yeGet(ai, "exitp");
+	ywRectPrint(rect);
+	ywPosPrint(yeGet(ai, "exitp"));
+	if (ywRectContain(rect, ywPosX(exitp) + 1, ywPosY(exitp), 0)) {
+		printf("EXIT !!!!!!!\n");
+		printf("EXIT !!!!!!!\n");
+		printf("EXIT !!!!!!!\n");
+	}
 	if (atk_state) {
 		ywPosSet(atk_pos, pjp, 0);
 		if (atk_dir == L_POS_0) {
@@ -347,6 +361,36 @@ static Entity *ai_levels(void)
 	return r;
 }
 
+void ai_load_map(Entity *ai, Entity *level)
+{
+	Entity *msp = yeGet(ai, "msp");
+
+	/* The Great Replacement */
+	for (int i = 0; i < yeLen(level); ++i) {
+		Entity *ll = yeGet(level, i);
+		int px = yeStrChrIdx(ll, '*');
+		if (px > 0) {
+			yeStringReplaceCharAt(ll, ' ', px);
+			YEntityBlock { ai.pjp = [px, i]; };
+		}
+
+		px = yeStrChrIdx(ll, '>');
+		if (px > 0) {
+			yeStringReplaceCharAt(ll, ' ', px);
+			YEntityBlock { ai.exitp = [px, i]; };
+		}
+		for (int j = 0; j < NB_MONSTERS; ++j) {
+			px = yeStrChrIdx(ll, '0' + j);
+			if (px > 0) {
+				Entity *mp = yeCreateArray(msp, NULL);
+				yeStringReplaceCharAt(ll, ' ', px);
+				YEntityBlock { mp = [j, [px, i], MR_POS]; };
+			}
+		}
+	}
+
+}
+
 void *ai_init(int nbArgs, void **args)
 {
 	Entity *ai = args[0];
@@ -354,7 +398,6 @@ void *ai_init(int nbArgs, void **args)
 	Entity *level = yeGet(levels, 0);
 	Entity *pj;
 	Entity *monsters;
-	Entity *msp;
 
 	printf("ai, yume no ai !\n");
 	YEntityBlock {
@@ -441,30 +484,7 @@ void *ai_init(int nbArgs, void **args)
 	print_mob(yeGet(levels, 0));
 	print_mob(pj);
 	monsters = yeGet(ai, "monsters");
-	msp = yeGet(ai, "msp");
-	/* The Great Replacement */
-	for (int i = 0; i < yeLen(level); ++i) {
-		Entity *ll = yeGet(level, i);
-		int px = yeStrChrIdx(ll, '*');
-		if (px > 0) {
-			yeStringReplaceCharAt(ll, ' ', px);
-			YEntityBlock { ai.pjp = [px, i]; };
-		}
-
-		px = yeStrChrIdx(ll, '>');
-		if (px > 0) {
-			yeStringReplaceCharAt(ll, ' ', px);
-			YEntityBlock { ai.exitp = [px, i]; };
-		}
-		for (int j = 0; j < NB_MONSTERS; ++j) {
-			px = yeStrChrIdx(ll, '0' + j);
-			if (px > 0) {
-				Entity *mp = yeCreateArray(msp, NULL);
-				yeStringReplaceCharAt(ll, ' ', px);
-				YEntityBlock { mp = [j, [px, i], MR_POS]; };
-			}
-		}
-	}
+	ai_load_map(ai, level);
 	draw_level(ai, level);
 	void *ret = ywidNewWidget(ai, "text-screen");
 	return ret;
