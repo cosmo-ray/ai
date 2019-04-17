@@ -50,6 +50,7 @@ static Entity *grp_left;
 static Entity *grp_right;
 static Entity *grp_down;
 static Entity *grp_atk;
+static Entity *grp_jmp;
 
 static int atk_bar;
 
@@ -208,10 +209,11 @@ static void *do_show_state(Entity *ai)
 {
 	Entity *txt = yeGet(ai, "text");
 	const char *str = game_state == SHOW_WIN_STATE ? "YOU WIN !!!!" : "YOU LOSE !!\n";
+	const char *e_str = game_state == SHOW_WIN_STATE ? "TATATATA TA TA TA TATA !" : "All your life are been terminated\n";
 
 	yeSetStringAt(txt, 0, str);
 	yePopBack(txt);
-	yeSetStringAt(txt, yeLen(txt) - 1, str);
+	yeSetStringAt(txt, yeLen(txt) - 1, e_str);
 	if (yeLen(txt) < 3) {
 		ygTerminate();
 	}
@@ -257,7 +259,7 @@ void *ai_action(int nbArgs, void **args)
 	Entity *eves = args[1];
 	Entity *pjp = yeGet(ai, "pjp");
 	Entity *lv = yeGet(ai, "lv");
-	int on_land = 0, press_jmp = yevIsKeyUp(eves, ' ');
+	int on_land = 0, press_jmp = yevIsGrpUp(eves, grp_jmp);
 	int l_down = yevIsGrpDown(eves, grp_left);
 	int r_down = yevIsGrpDown(eves, grp_right);
 	Entity *msp = yeGet(ai, "msp");
@@ -543,5 +545,6 @@ void *mod_init(int nbArg, void **args)
 	grp_right = yevCreateGrp(NULL, 'd', Y_RIGHT_KEY);
 	grp_down = yevCreateGrp(NULL, 's', Y_DOWN_KEY);
 	grp_atk = yevCreateGrp(NULL, 'z', '\n', 'w');
+	grp_jmp = yevCreateGrp(NULL, 'x', ' ');
 	return mod;
 }
