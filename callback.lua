@@ -16,7 +16,6 @@ function ai_bad_mob0_callback(ai, mob)
       to_add = 1
    end
 
-   print(l_str)
    if space_char == string.byte(l_str, check_pos) then
       yeSetInt(dir, other_dir)
    end

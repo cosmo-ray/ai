@@ -89,8 +89,6 @@ static Entity *check_monster_col(Entity *msp, Entity *pos, int w, int h)
 			ms = ywSizeCreate(1, 0, NULL, NULL);
 		mr = ywRectCreatePosSize(mpos, ms, NULL, NULL);
 		ywPosAddXY(mr, 1, -ywRectH(ms));
-		ywRectPrint(mr);
-		ywRectPrint(pr);
 		if (ywRectCollision(pr, mr))
 			return minfo;
 	}
@@ -250,10 +248,8 @@ void *ai_action(int nbArgs, void **args)
 
 	if (r_down) {
 		x_mv = 1;
-		printf("right\n");
 	} else if (l_down) {
 		x_mv = -1;
-		printf("left\n");
 	}
 
 	if ((yevIsGrpUp(eves, grp_right) && !l_down) ||
@@ -307,7 +303,6 @@ void *ai_action(int nbArgs, void **args)
 		player_pos = player_pos ==  L_POS_0 ? L_POS_1 : L_POS_0;
 
 	ywPosAddXY(pjp, x_mv, -jmp_power);
-	ywPosPrint(pjp);
 	if (ywPosX(pjp) < 1) {
 		ywPosSetX(pjp, 1);
 	} else if (ywPosX(pjp) > 65 - 3) {
@@ -322,14 +317,12 @@ void *ai_action(int nbArgs, void **args)
 		ywPosSetY(pjp, 2);
 	}
 	jmp_power -= 1;
-	ywPosPrint(pjp);
 
 	if (press_jmp && on_land) {
 		x_mv *= 2;
 		jmp_power = 3;
 	}
 
-	printf("action !\n");
 	Entity *mcalls = yeGet(ai, "ms_callback");
 	YE_FOREACH(msp, ms_i) {
 		int mt = yeGetIntAt(ms_i, 0);
@@ -341,8 +334,6 @@ void *ai_action(int nbArgs, void **args)
 		Entity *mpos = yeGet(minfo, 1);
 
 		yeSubInt(l, 1);
-		printf("bad time is gonna happen:( %p %p\n", mpos,
-		       pjp);
 		if (ywPosX(mpos) > ywPosX(pjp))
 			ywPosAddXY(pjp, -3, 0);
 		else
@@ -354,12 +345,9 @@ void *ai_action(int nbArgs, void **args)
 	yeAutoFree Entity *rect = ywRectCreateInts(ywPosX(pjp), ywPosY(pjp) - 2,
 						    3, 3, NULL, NULL);
 	Entity *exitp = yeGet(ai, "exitp");
-	ywRectPrint(rect);
-	ywPosPrint(yeGet(ai, "exitp"));
 	if (ywRectContain(rect, ywPosX(exitp) + 1, ywPosY(exitp), 0)) {
 		Entity *lvls = yeGet(ai, "lvs");
 		int nb_lvls = yeLen(lvls);
-		printf("EXIT !!!!!!!\n");
 		++cur_level;
 		if (cur_level >= nb_lvls) {
 			printf("WIN !!!!!\n");
@@ -370,8 +358,6 @@ void *ai_action(int nbArgs, void **args)
 			ai_load_map(ai);
 			lv = yeGet(ai, "lv");
 		}
-		printf("to level %d/%d\n", cur_level, nb_lvls);
-		printf("EXIT !!!!!!!\n");
 	}
 	if (atk_state) {
 		ywPosSet(atk_pos, pjp, 0);
@@ -381,7 +367,6 @@ void *ai_action(int nbArgs, void **args)
 			ywPosAddXY(atk_pos, 3, 0);
 		}
 		if ((minfo = check_monster_col(msp, atk_pos, 3, 3))) {
-			printf("TOUCH TOUCH kokoni TOUCH\n");
 			yeRemoveChild(msp, minfo);
 		}
 	}
@@ -408,7 +393,7 @@ static Entity *ai_levels(void)
 	Entity *r = yeCreateArray(NULL, NULL);
 
 #include "levels.c"
-	print_mob(yeGet(r, 0));
+	//print_mob(yeGet(r, 0));
 	return r;
 }
 
@@ -500,10 +485,6 @@ void *ai_init(int nbArgs, void **args)
 			       yeGet(ai, "ms_callback"));
 	atk_bar = ATK_BAR_MAX;
 	pj = yeGet(yeGet(ai, "pj"), player_pos);
-	print_mob(yeGetByStr(ai, "monsters.0.0"));
-	print_mob(yeGetByStr(ai, "monsters.0.1"));
-	print_mob(yeGet(levels, 0));
-	print_mob(pj);
 	monsters = yeGet(ai, "monsters");
 	ai_load_map(ai);
 	draw_level(ai, level);
