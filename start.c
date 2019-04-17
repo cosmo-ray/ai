@@ -204,6 +204,7 @@ static void ai_load_map(Entity *ai)
 	Entity *msp = yeGet(ai, "msp");
 	Entity *level = yeGet(ai, "lv");
 
+	yeClearArray(msp);
 	/* The Great Replacement */
 	for (int i = 0; i < yeLen(level); ++i) {
 		Entity *ll = yeGet(level, i);
