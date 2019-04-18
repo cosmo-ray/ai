@@ -209,7 +209,7 @@ static void *do_show_state(Entity *ai)
 {
 	Entity *txt = yeGet(ai, "text");
 	const char *str = game_state == SHOW_WIN_STATE ? "YOU WIN !!!!" : "YOU LOSE !!\n";
-	const char *e_str = game_state == SHOW_WIN_STATE ? "TATATATA TA TA TA TATA !" : "All your life are been terminated to us !\n\nnFIN !";
+	const char *e_str = game_state == SHOW_WIN_STATE ? "TATATATA TA TA TA TATA !" : "All your life are been terminated to us !\n\nFIN !";
 
 	yeSetStringAt(txt, 0, str);
 	yePopBack(txt);

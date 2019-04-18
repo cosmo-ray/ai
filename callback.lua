@@ -5,6 +5,7 @@ function ai_bad_mob0_callback(ai, mob)
    local txt = ai.text
    local l_str = txt[ywPosY(pos) + 3]:to_string()
    local space_char = string.byte(" ") -- SPACEEEEEEE
+   local pipe_char = string.byte("|")
    local dir = mob[2]
    local to_add = -1
    local other_dir = 0
@@ -16,7 +17,8 @@ function ai_bad_mob0_callback(ai, mob)
       to_add = 1
    end
 
-   if space_char == string.byte(l_str, check_pos) then
+   local c_byte = string.byte(l_str, check_pos)
+   if space_char == c_byte or pipe_char == c_byte then
       yeSetInt(dir, other_dir)
    end
 
