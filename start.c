@@ -195,10 +195,10 @@ static void draw_level(Entity *ai, Entity *level)
 
 
 	Entity *msp = yeGet(ai, "msp");
-	for (int j = 0; j < yeLen(msp); ++j) {
-		int mt = yeGetIntAt(yeGet(msp, j), 0);
- 		Entity *mpos = yeGet(yeGet(msp, j), 1);
-		int mn_sp =  yeGetIntAt(yeGet(msp, j), 2);
+	YE_FOREACH(msp, mp) {
+		int mt = yeGetIntAt(mp, 0);
+ 		Entity *mpos = yeGet(mp, 1);
+		int mn_sp =  yeGetIntAt(mp, 2);
 		Entity *mon = yeGet(yeGet(monsters, mt), mn_sp);
 
 		draw_stuff(txt, mon, mpos);
