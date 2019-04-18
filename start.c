@@ -209,7 +209,7 @@ static void *do_show_state(Entity *ai)
 {
 	Entity *txt = yeGet(ai, "text");
 	const char *str = game_state == SHOW_WIN_STATE ? "YOU WIN !!!!" : "YOU LOSE !!\n";
-	const char *e_str = game_state == SHOW_WIN_STATE ? "TATATATA TA TA TA TATA !" : "All your life are been terminated\n";
+	const char *e_str = game_state == SHOW_WIN_STATE ? "TATATATA TA TA TA TATA !" : "All your life are been terminated to us !\n\nnFIN !";
 
 	yeSetStringAt(txt, 0, str);
 	yePopBack(txt);
@@ -487,7 +487,8 @@ void *ai_init(int nbArgs, void **args)
 		1:       "|----------------------------------------------------------------|",
 		2-32:    "",
 		33:      "|________________________________________________________________|",
-		34: ""
+		34: "",
+		35: "Attack: z Jump: x"
 		};
 		ai.lv = level;
 		ai.lvs = levels;
