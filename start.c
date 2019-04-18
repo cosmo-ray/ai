@@ -64,6 +64,8 @@ static int cur_level;
 
 static int game_state;
 
+static int lvl_sounds[3];
+
 static void *die(Entity *ai)
 {
 	game_state = SHOW_LOSE_STATE;
@@ -226,6 +228,8 @@ static void ai_load_map(Entity *ai)
 	Entity *msp = yeGet(ai, "msp");
 	Entity *level = yeGet(ai, "lv");
 
+	if (lvl_sounds[cur_level] > 0)
+		ySoundPlay(lvl_sounds[cur_level]);
 	yeClearArray(msp);
 	/* The Great Replacement */
 	for (int i = 0; i < yeLen(level); ++i) {
@@ -418,7 +422,6 @@ static Entity *ai_levels(void)
 	Entity *r = yeCreateArray(NULL, NULL);
 
 #include "levels.c"
-	//print_mob(yeGet(r, 0));
 	return r;
 }
 
@@ -509,6 +512,12 @@ void *ai_init(int nbArgs, void **args)
 			       yeGet(ai, "ms_callback"));
 	yeCreateFunctionSimple("ai_bat_callback", ygGetLuaManager(),
 			       yeGet(ai, "ms_callback"));
+
+
+	lvl_sounds[0] = ySoundLoad("./callgirl.mp3");
+	lvl_sounds[1] = -1; // so we continue on last sound
+	lvl_sounds[2] = ySoundLoad("./rekuiemu.mp3");
+
 	atk_bar = ATK_BAR_MAX;
 	pj = yeGet(yeGet(ai, "pj"), player_pos);
 	monsters = yeGet(ai, "monsters");
