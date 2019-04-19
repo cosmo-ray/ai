@@ -64,7 +64,7 @@ static int cur_level;
 
 static int game_state;
 
-static int lvl_sounds[3];
+static int lvl_sounds[4];
 
 static void *die(Entity *ai)
 {
@@ -332,12 +332,30 @@ void *ai_action(int nbArgs, void **args)
 	else if (x_mv < 0)
 		player_pos = player_pos ==  L_POS_0 ? L_POS_1 : L_POS_0;
 
-	ywPosAddXY(pjp, x_mv, -jmp_power);
-	if (ywPosX(pjp) < 1) {
-		ywPosSetX(pjp, 1);
-	} else if (ywPosX(pjp) > 65 - 3) {
-		ywPosSetX(pjp, 65 - 3);
+	int real_mv = x_mv;
+	const char *ll = yeGetStringAt(lv, ywPosY(pjp));
+	if (x_mv > 0) {
+		for (int i = 0; i < x_mv; ++i) {
+			if (ll[ywPosX(pjp) + 3 + i] == '|') {
+				real_mv = 0;
+				break;
+			}
+		}
+	} else if (x_mv < 0) {
+		for (int i = 0; i > x_mv; --i) {
+			if (ll[ywPosX(pjp)  - 1 + i] == '|') {
+				real_mv = 0;
+				break;
+			}
+		}
 	}
+	ywPosAddXY(pjp, real_mv, -jmp_power);
+
+	if (ywPosX(pjp) < 1) {
+                ywPosSetX(pjp, 1);
+        } else if (ywPosX(pjp) > 65 - 3) {
+                ywPosSetX(pjp, 65 - 3);
+        }
 
 	if (ywPosY(pjp) > 29) {
 		ywPosSetY(pjp, 29);
@@ -517,6 +535,7 @@ void *ai_init(int nbArgs, void **args)
 	lvl_sounds[0] = ySoundLoad("./callgirl.mp3");
 	lvl_sounds[1] = -1; // so we continue on last sound
 	lvl_sounds[2] = ySoundLoad("./rekuiemu.mp3");
+	lvl_sounds[3] = -1;
 
 	atk_bar = ATK_BAR_MAX;
 	pj = yeGet(yeGet(ai, "pj"), player_pos);
@@ -538,10 +557,38 @@ void *mod_init(int nbArg, void **args)
 		init.name = "ai";
 		init.callback = ai_init;
 		mod.name = "ai";
-		mod.starting_widget = "test_ai";
+		mod.starting_widget = "story";
 		mod.test_ai = [];
 		mod["window size"] = [800, 600];
 		mod.test_ai["<type>"] = "ai";
+		mod.story = [];
+		mod.story["<type>"] = "text-screen";
+		// Text generated with toilet
+		mod.story.text = [
+			"\n\n\n",
+			"m     m                        \"",
+			"#  #  #  mmm    m mm   m mm  mmm     mmm    m mm",
+			"\"#\"#  # \"   #   #\"  \"  #\"  \"   #    #\" \"#   #\"  \"",
+			" ## ##\" m\"\"\"#   #      #       #    #   #   #",
+			" #   #  \"mm\"#   #      #     mm#mm  \"#m#\"   #",
+			"\n",
+			"        mmmm    m\"\"",
+			"       m\"  \"m mm#mm",
+			"       #    #   #",
+			"       #    #   #",
+			"        #mm#    #",
+			"   mm                        mmmmm  mmmmm ",
+			"   ##    mmm    mmm            #      #   ",
+			"  #  #  #   \"  #\"  \"           #      #   ",
+			"  #mm#   \"\"\"m  #               #      #   ",
+			" #    # \"mmm\"  \"#mm\"         mm#mm  mm#mm ",
+			"\n\nThis Text is sliding like in star wars",
+			"and telling you a Story like you've nerver seen before"
+
+			];
+		mod.story.background = "rgba: 255 255 255 255";
+		mod.story.action = "nextOnKeyDown";
+		mod.story.next = "ai.test_ai";
 		mod["window name"] = "Asc II";
 		mod["pre-load"] = [];
 		mod["pre-load"][0] = [];
