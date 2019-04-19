@@ -584,7 +584,7 @@ void *mod_init(int nbArg, void **args)
 			" #    # \"mmm\"  \"#mm\"         mm#mm  mm#mm ",
 			"\n\nthis Text is sliding down like in star wars",
 			"and telling you a Story like you've never seen before",
-			"You now know everything about the Kingdom of Asc",
+			"You know now  everything about the Kingdom of Asc",
 			"Our last game that was never made Archer of Asc I",
 			"And why our valiant Hero will fight Monster",
 			"This story was so intenser and full of twist that you've",
