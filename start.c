@@ -582,9 +582,14 @@ void *mod_init(int nbArg, void **args)
 			"  #  #  #   \"  #\"  \"           #      #   ",
 			"  #mm#   \"\"\"m  #               #      #   ",
 			" #    # \"mmm\"  \"#mm\"         mm#mm  mm#mm ",
-			"\n\nThis Text is sliding like in star wars",
-			"and telling you a Story like you've nerver seen before"
-
+			"\n\nthis Text is sliding down like in star wars",
+			"and telling you a Story like you've never seen before",
+			"You now know everything about the Kingdom of Asc",
+			"Our last game that was never made Archer of Asc I",
+			"And why our valiant Hero will fight Monster",
+			"This story was so intenser and full of twist that you've",
+			"already made up your mind:\n",
+			"THIS IS THE BEST GAME OF LINUX GAME JAM 2019 !"
 			];
 		mod.story.background = "rgba: 255 255 255 255";
 		mod.story.action = "nextOnKeyDown";
