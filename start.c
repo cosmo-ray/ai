@@ -228,7 +228,7 @@ static void ai_load_map(Entity *ai)
 	Entity *msp = yeGet(ai, "msp");
 	Entity *level = yeGet(ai, "lv");
 
-	if (lvl_sounds[cur_level] > 0)
+	if (lvl_sounds[cur_level] >= 0)
 		ySoundPlay(lvl_sounds[cur_level]);
 	yeClearArray(msp);
 	/* The Great Replacement */
