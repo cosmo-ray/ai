@@ -217,7 +217,13 @@ static void *do_show_state(Entity *ai)
 	yePopBack(txt);
 	yeSetStringAt(txt, yeLen(txt) - 1, e_str);
 	if (yeLen(txt) < 3) {
-		ygTerminate();
+		game_state = RUNNING_STATE;
+		Entity *quit_action = yeGet(ai, "quit");
+
+		if (quit_action)
+			yesCall(quit_action, ai);
+		else
+			ygTerminate();
 	}
 	return (void *)ACTION;
 }
@@ -263,7 +269,7 @@ void *ai_action(int nbArgs, void **args)
 	Entity *eves = args[1];
 	Entity *pjp = yeGet(ai, "pjp");
 	Entity *lv = yeGet(ai, "lv");
-	int on_land = 0, press_jmp = yevIsGrpUp(eves, grp_jmp);
+	int on_land = 0, press_jmp = yevIsGrpDown(eves, grp_jmp);
 	int l_down = yevIsGrpDown(eves, grp_left);
 	int r_down = yevIsGrpDown(eves, grp_right);
 	Entity *msp = yeGet(ai, "msp");
