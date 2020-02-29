@@ -220,6 +220,7 @@ static void *do_show_state(Entity *ai)
 		game_state = RUNNING_STATE;
 		Entity *quit_action = yeGet(ai, "quit");
 
+		yeCreateInt(game_state == SHOW_WIN_STATE, ai, "have_win");
 		if (quit_action)
 			yesCall(quit_action, ai);
 		else
@@ -538,9 +539,9 @@ void *ai_init(int nbArgs, void **args)
 			       yeGet(ai, "ms_callback"));
 
 
-	lvl_sounds[0] = ySoundLoad("./callgirl.mp3");
+	lvl_sounds[0] = ySoundMusicLoad("./callgirl.mp3");
 	lvl_sounds[1] = -1; // so we continue on last sound
-	lvl_sounds[2] = ySoundLoad("./rekuiemu.mp3");
+	lvl_sounds[2] = ySoundMusicLoad("./rekuiemu.mp3");
 	lvl_sounds[3] = -1;
 
 	atk_bar = ATK_BAR_MAX;
