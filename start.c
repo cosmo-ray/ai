@@ -537,7 +537,7 @@ void *ai_init(int nbArgs, void **args)
 			       yeGet(ai, "ms_callback"));
 	yeCreateFunctionSimple("ai_bat_callback", ygGetLuaManager(),
 			       yeGet(ai, "ms_callback"));
-
+	yeCreateInt(-2, ai, "line-spacing");
 
 	lvl_sounds[0] = ySoundMusicLoad("./callgirl.mp3");
 	lvl_sounds[1] = -1; // so we continue on last sound
