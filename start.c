@@ -217,10 +217,10 @@ static void *do_show_state(Entity *ai)
 	yePopBack(txt);
 	yeSetStringAt(txt, yeLen(txt) - 1, e_str);
 	if (yeLen(txt) < 3) {
+		yeReCreateInt(game_state == SHOW_WIN_STATE, ai, "have_win");
 		game_state = RUNNING_STATE;
 		Entity *quit_action = yeGet(ai, "quit");
 
-		yeCreateInt(game_state == SHOW_WIN_STATE, ai, "have_win");
 		if (quit_action)
 			yesCall(quit_action, ai);
 		else
