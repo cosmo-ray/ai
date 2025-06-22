@@ -126,6 +126,8 @@ static void draw_level(Entity *ai, Entity *level)
 	Entity *pjp = yeGet(ai, "pjp");
 	Entity *pj = yeGet(yeGet(ai, "pj"), player_pos);
 	Entity *monsters = yeGet(ai, "monsters");
+	Entity *lvls = yeGet(ai, "lvs");
+	int nb_lvls = yeLen(lvls);
 
 	for (int i = 0; i < yeLen(level); ++i) {
 		Entity *ll = yeGet(level, i);
@@ -141,7 +143,17 @@ static void draw_level(Entity *ai, Entity *level)
 			 "|/\\|"
 			];
 	}
-	draw_stuff(txt, exit, yeGet(ai, "exitp"));
+	YE_NEW(Array, win);
+	YEntityBlock {
+		win = [  " ___ ",
+			 "(~*~)",
+			 " | | "
+			];
+	}
+	if (cur_level == nb_lvls - 1)
+		draw_stuff(txt, win, yeGet(ai, "exitp"));
+	else
+		draw_stuff(txt, exit, yeGet(ai, "exitp"));
 	if (atk_state) {
 		YE_NEW(Array, atk_sprite);
 		Entity *pos = yeGet(ai, "atk_p");
