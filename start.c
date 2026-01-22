@@ -74,6 +74,7 @@ static void *die(Entity *ai)
 
 static void print_mob(Entity *mob)
 {
+	Entity *str;
 	YE_FOREACH(mob, str) {
 		printf("%s\n", yeGetString(str));
 	}
@@ -209,6 +210,7 @@ static void draw_level(Entity *ai, Entity *level)
 
 
 	Entity *msp = yeGet(ai, "msp");
+	Entity *mp;
 	YE_FOREACH(msp, mp) {
 		int mt = yeGetIntAt(mp, 0);
  		Entity *mpos = yeGet(mp, 1);
@@ -391,6 +393,7 @@ void *ai_action(int nbArgs, void **args)
 	}
 
 	Entity *mcalls = yeGet(ai, "ms_callback");
+	Entity *ms_i;
 	YE_FOREACH(msp, ms_i) {
 		int mt = yeGetIntAt(ms_i, 0);
 
